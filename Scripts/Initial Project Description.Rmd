@@ -1,0 +1,51 @@
+---
+title: "Initial Project Desription"
+author: "Ashlee Mikkelsen"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Introduction
+
+## Background
+
+Understanding resource allocation trade-offs and life-history evolution is a complex interplay between resource availability and spatial distribution, individual variation in resource acquisition and partitioning among competing resource demands, and natural stochasticity within the environment. Understanding this interplay and how it affects population dynamics through reproduction is important, especially given the predictions that climate change will result in more extreme environmental stochasticity.
+
+### Objectives
+
+The objectives of this analysis are to use spatially specific individual physiological indicators of resource acquisition, overall metabolic demands, and reproductive investment. We hope to gain a better understanding of how annual resource availability, indicated by food availability and stable isotope values, influence body condition indices, cortisol, and reproduction in a spatially explicit way. By placing our bears and physiological measures in space and time, we eliminate some of the confounding variables as we try and understand diet and reproduction, particularly in an area experiencing the disproportionate effects of climate change.
+
+#### Hypotheses
+
+1.  Annual variation in climate will result in variation in primary productivity and energetic demands, resulting in some years that are more energetically stressful than others, thus we expect annual variation in both food indices and individual physiological measurements.
+
+2.  We also expect resource availability to vary across the landscape, resulting in some bears which have resources in higher abundance or higher quality than their peers. In this case, we expect to see “hot spots” on the landscape with consistent physiological patterns.
+
+
+  a. We may find hotspots in which cortisol values are high and reproductive output is low, indicating females in that area are resource limited, reducing their ability to reproduce.
+
+  b. We may also find hotspots in which cortisol is high and reproduction is also high, because producing more offspring is inherently more energetically taxing.
+
+3.  We may find that higher δ15N values are associated with lower cortisol concentrations and higher reproductive output because higher δ15N values are associated with diets higher in carnivory, which are considered higher quality in bears.
+
+4.  However, my previous work showed that bears predominately eat berries, and higher δ15N values may indicate dietary shifts in response to poor berry production. In this case, higher δ15N values will be associated with higher cortisol values and lower body conditions in years low on the berry index.
+
+Both of the above relationships are likely to vary across the landscape, as differences in microclimate and thermal buffering will result in differential berry production across the landscape.
+
+# Methods
+
+## Data
+
+The data will be limited to a more modern subset because of issues with the cortisol data, we will only include cortisol concentrations measured with Kit2, limiting our data to 2005-2020. 
+
+### Data sources
+
+#### Cortisol
+
+Cortisol is a ubiquitous and dynamic steroid hormone that is related to *many* physiological processes in the body, but it is intimately tied to metabolism and energy demands in the body. The brown bear research project has been collecting hair samples and measuring cortisol concentrations from captured bears for decades. Hairs samples are whole guard hairs that have been weighed, washed, and ground to a homogenized powder. Thus concentrations represent an average cortisol concentration over the course of hair growth (late April - October the year prior to collection) standardized by sample mass.
+
+
