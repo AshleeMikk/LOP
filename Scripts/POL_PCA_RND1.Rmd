@@ -1,0 +1,383 @@
+---
+title: "POL_PCA_RND1"
+author: "Ashlee Mikkelsen"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Introduction
+
+This document is my first attempt at a PCA to look at energy allocation and life-history trade-offs in bears. I will follow the steps for PCA analysis in this tutorial: https://bayesbaes.github.io/2021/01/28/PCA-tutorial.html followed by a partial least squares regression. See Rademaker et al. (2024) for a good example of a similar analysis in a recently published article.
+
+## Environment
+
+## Set WD
+```{r}
+
+setwd("C:/Users/amikk/Documents/Rprojects/LOP")
+
+```
+
+
+## Load packages
+
+```{r}
+
+library(ggplot2)
+library(viridis)
+library(ggfortify)
+library(corrplot)
+
+```
+
+
+## Set graphing theme
+
+```{r}
+mytheme <- theme(
+    axis.text = element_text(size = 10,face = "bold"),
+    axis.title = element_text(size = 12, face = "bold"),
+    panel.grid.major = element_line(color = "grey92"),
+    panel.grid.minor = element_line(color = "grey96"),
+    panel.background = element_rect(fill = "white"),
+    axis.line = element_line(colour = "black",linewidth = 1),
+    axis.ticks = element_line(linewidth = 1),
+    legend.position = "top"
+    )
+theme_set(mytheme)
+
+P <- palette("inferno"(40))
+P <- palette("inferno"(40))
+
+```
+
+
+## Load data
+
+```{r}
+
+LOP.df <- read.csv("Data/LOPdata_Centroids.csv")
+LOP.df <- subset(LOP.df, sex!="") # Remove records in which sex is unknown
+LOP.df$fAGE <- as.factor(LOP.df$age)
+LOP.df <- na.omit(LOP.df)
+LOP.df <- subset(LOP.df, Year>2007) # remove records prior to 2008, because we have very little data in 2005 and 2007 and no data for 2006.
+LOP.df <- subset(LOP.df, cortisol<40) # There is one cortisol value that is an extreme, extreme outlier ~50 and is too influential to be included in the analysis.
+
+Bears.PCA <- as.factor(LOP.df$BearID)
+
+```
+
+PCA can only handle continuous data and cannot handle NAs. So I first need to create a data frame with only continuous data, with no NAs, then I need to center all of my variables.
+
+```{r}
+
+LOP.PCA.df <- LOP.df[,c(
+  which(colnames(LOP.df)=="Year"),
+  which(colnames(LOP.df)=="age"),
+  which(colnames(LOP.df)=="C13"),
+  which(colnames(LOP.df)=="N15"),
+  which(colnames(LOP.df)=="mass"),
+  which(colnames(LOP.df)=="headcirc"),
+  which(colnames(LOP.df)=="cortisol"),
+  which(colnames(LOP.df)=="x"),
+  which(colnames(LOP.df)=="y")
+  )
+]
+
+is.na(LOP.PCA.df)
+LOP.PCA.df <- na.omit(LOP.PCA.df)
+
+
+
+Years.PCA <- as.factor(LOP.PCA.df$Year)
+
+```
+
+Before I center the variables, I want to check their correlations
+
+```{r}
+
+corr_mat <- 
+  cor(LOP.PCA.df, method = "pearson")
+
+corrplot(corr_mat, type="upper", order="hclust", method = "number")
+
+```
+
+Interestingly, dN15 and both mass and head circumference are highly positively correlated, but it is only minimally correlated with age. This is strange because both Anne and I have found 15N to be highly correlated with d15N. And age is not actually that highly correlated with mass and head circumference. 
+
+## Center my variables
+
+```{r}
+
+LOP.PCA.df$cYear <- LOP.PCA.df$Year-mean(LOP.PCA.df$Year)
+LOP.PCA.df$cAge <- LOP.PCA.df$age-mean(LOP.PCA.df$age)
+LOP.PCA.df$cC13 <- LOP.PCA.df$C13-mean(LOP.PCA.df$C13)
+LOP.PCA.df$cN15 <- LOP.PCA.df$N15-mean(LOP.PCA.df$N15)
+LOP.PCA.df$cMass <- LOP.PCA.df$mass-mean(LOP.PCA.df$mass)
+LOP.PCA.df$cHeadCirc <- LOP.PCA.df$headcirc-mean(LOP.PCA.df$headcirc)
+LOP.PCA.df$cCortisol <- LOP.PCA.df$cortisol-mean(LOP.PCA.df$cortisol)
+LOP.PCA.df$cUTMX <- LOP.PCA.df$x-mean(LOP.PCA.df$x)
+LOP.PCA.df$cUTMY <- LOP.PCA.df$y-mean(LOP.PCA.df$y)
+
+```
+
+## Only include centered variables
+
+```{r}
+
+LOP.PCA.Centered.df <- LOP.PCA.df[,c(
+  which(colnames(LOP.PCA.df)=="cYear"),
+  which(colnames(LOP.PCA.df)=="cAge"),
+  which(colnames(LOP.PCA.df)=="cC13"),
+  which(colnames(LOP.PCA.df)=="cN15"),
+  which(colnames(LOP.PCA.df)=="cMass"),
+  which(colnames(LOP.PCA.df)=="cHeadCirc"),
+  which(colnames(LOP.PCA.df)=="cCortisol"),
+  which(colnames(LOP.PCA.df)=="cUTMX"),
+  which(colnames(LOP.PCA.df)=="cUTMY")
+  )
+]
+
+
+```
+
+
+
+# PCA
+
+## Run PCA
+```{r}
+
+LOP_pca_values <- 
+  prcomp(LOP.PCA.Centered.df,
+         center = TRUE,
+         scale = TRUE)
+
+# Let's look at the PCA values
+summary(LOP_pca_values)
+
+LOP_pca_values$rotation
+
+```
+
+## Visualize PCA
+
+
+```{r}
+
+
+
+autoplot(LOP_pca_values,
+         loadings = TRUE,
+         loadings.label = TRUE,
+         data = LOP.df,
+         color="sex")
+
+
+```
+
+# PCA axes
+
+## PCA 1
+The first PCA axis is associated with differences in morphometrics, principally driven by differences between the sexes. Positive associations with PC1 include mass, head circumference, age, $\delta^{15}N$ values, and to a lesser degree, cortisol. Males tend to have more positive associations with PC1 than females. PC1 explains ~34% of the variation in the data. 
+
+Most variables associated with PCA 1 are positive, excpet for year, which is negatively coorelated. To me, this means that early in the time series, our sample is younger, smaller bears. This could be related to a few champion bears being collared and then reproducing and being resampled over and over, while the newly collared bears remain in the sample for only a few years before being shot and replaced bu other, young small bears. So a few, very old, large bears may be driving this trend. 
+
+## PCA 2
+The second PCA axis seems to be associated with spatial and diet components and explains an additional ~17% of the variation in the data.
+
+This one is a bit harder to explain because $\delta^{13}C$ values seem to be negatively correlated. Greater UTMX would be the Eastern portion of the study area and higher $\delta^{13}C$ would be associated with higher-trophic foods and lingonberry and negatively associated with bilberry. So the more positive end of PC2 is associated with bears in the western portion of the study area consuming more lingonberry and higher trophic foods while the lower end of PC2 would be bears in the Eastern portion of the study area consuming bilberry.Older bears may also be more in the western portions of the study area.
+
+## PCA 3 
+
+I think that PC3 is being driven by our aging sampled population. PC# is associated with year, cortisol, and age. But there isn't much evidence that cortisol increase with bear age or through time. I think this is more likely an artifact of our sampled population ageing and a larger proportion of our samples in later years representing older, larger, females that are reproducing, and this have higher energetic demands. Overall, this would drive the average cortisol and age up through time, without being related to the aging process or a general rend on the landscape increasing cortisol
+
+When I graph PC3 ~ PC2, the grouping between the sexes is not longer evident, but it does look like the points are clustering by reproductive status. (see below for model verification). As suspected, reproductive status does a better job than sex or age at explaining variation in PC 3.
+
+
+
+# Tying PCA into linear regression
+
+```{r}
+
+PCA_loadings <- data.frame(pca_values$x)
+print(PCA_loadings)
+
+PCA_loadings <- PCA_loadings[,1:4]
+print(PCA_loadings)
+
+PCA_Regress_df <- data.frame(LOP.df,PCA_loadings)
+
+Vnames <- c("Year","Age","d13C","d15N","Mass",
+            "HeadCirc","CORT", "UTMX", "UTMY")
+
+pca_load <- 
+  as.data.frame(cbind(Vnames,pca_values$rotation))
+
+pca_load$PC1 <- as.numeric(pca_load$PC1)
+pca_load$PC2 <- as.numeric(pca_load$PC2)
+pca_load$PC3 <- as.numeric(pca_load$PC3)
+pca_load$PC4 <- as.numeric(pca_load$PC4)
+pca_load$PC5 <- as.numeric(pca_load$PC5)
+pca_load$PC6 <- as.numeric(pca_load$PC6)
+pca_load$PC7 <- as.numeric(pca_load$PC7)
+pca_load$PC8 <- as.numeric(pca_load$PC8)
+pca_load$PC9 <- as.numeric(pca_load$PC9)
+
+
+```
+
+
+
+
+```{r}
+
+
+ggplot(data = PCA_Regress_df, aes(Year,age))+
+  geom_jitter(height = 0.2, width = 0.2,alpha=0.5)
+
+
+ggplot(data = PCA_Regress_df, aes(Year,cortisol))+
+  geom_jitter(height = 0.2, width = 0.2,alpha=0.5)
+
+
+
+```
+
+
+
+
+## PC1
+
+```{r}
+
+
+PC1_mod1 <- lm(PC1~sex+
+                 age+
+                 sex*age+
+                 N15+
+                 Year,
+               data = PCA_Regress_df)
+
+summary(PC1_mod1)
+
+performance::check_model(PC1_mod1, check = "vif")
+
+
+PC1_mod2 <- lm(PC1~Repro,
+               data = PCA_Regress_df)
+
+summary(PC1_mod2)
+
+
+
+
+```
+
+
+
+## PC2
+
+```{r}
+
+
+
+
+
+```
+
+
+
+
+## PC3
+
+```{r}
+
+PC3_mod1 <- lm(PC3~sex, data = PCA_Regress_df)
+summary(PC3_mod1)
+AICcmodavg::AICc(PC3_mod1)
+
+
+PC3_mod2 <- lm(PC3~Repro, data = PCA_Regress_df)
+summary(PC3_mod2)
+AICcmodavg::AICc(PC3_mod2)
+
+
+PC3_mod3 <- lm(PC3~age, data = PCA_Regress_df)
+summary(PC3_mod3)
+AICcmodavg::AICc(PC3_mod3)
+
+```
+
+
+
+# Better PCA plots
+
+## PC 1 & PC 2
+
+```{r}
+
+LOP_PC12 <- ggplot(PCA_Regress_df, aes(x = PC1, y = PC2))+
+  geom_point(aes(colour = Repro,
+                 pch=Repro),
+             size=2,
+             alpha=0.5)+
+  scale_color_manual(values = c(P[8],P[25], P[36]))+
+  geom_segment(data = pca_load, 
+               aes(x = 0, y = 0, 
+                   xend = PC1*5.5,
+                   yend = PC2*5.5),
+               arrow = arrow(length = unit(1/2, 'picas')), lwd=0.4, alpha=0.6) +
+  annotate('text', x = (pca_load$PC1*3.3), y = (pca_load$PC2*3.6),
+           label = pca_load$Vnames,
+           size = 3.5)+
+  ylab("PC2  (16.8%)")+
+  xlab ("PC1  (33.7%)")+
+  coord_equal()
+LOP_PC12
+
+ggsave(plot = LOP_PC12,
+       "LOP_PCA_PC12.png",
+       width = 6.5, height = 5.5,
+       units = "in",
+       dpi=800)
+
+```
+
+
+## PC 2 & PC 3
+
+```{r}
+
+LOP_PC23 <- ggplot(PCA_Regress_df, aes(x = PC2, y = PC3))+
+  geom_point(aes(colour = Repro,
+                 pch=Repro),
+             size=2,
+             alpha=0.5)+
+  scale_color_manual(values = c(P[8],P[25], P[36]))+
+  geom_segment(data = pca_load, 
+               aes(x = 0, y = 0, 
+                   xend = PC2*5.5,
+                   yend = PC3*5.5),
+               arrow = arrow(length = unit(1/2, 'picas')), lwd=0.4, alpha=0.6) +
+  annotate('text', x = (pca_load$PC2*3.3), y = (pca_load$PC3*3.6),
+           label = pca_load$Vnames,
+           size = 3.5)+
+  ylab("PC3  (13.0%)")+
+  xlab ("PC2  (16.8%)")+
+  coord_equal()
+LOP_PC23
+
+ggsave(plot = LOP_PC23,
+       "LOP_PCA_PC23.png",
+       width = 5, height = 6.5,
+       units = "in",
+       dpi=800)
+
+```
+

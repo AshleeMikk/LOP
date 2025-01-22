@@ -1,0 +1,97 @@
+---
+title: "Multivariate Analysis_trial"
+author: "Ashlee Mikkelsen"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = False)
+```
+
+
+
+# Introduction
+
+This R markdown documents my first foray into multivariate mixed analysis as recommended by Anne Hertel to handle the highly correlated, interrelated physiology dataset on an individually marked population of Swedish brown bears.
+
+This analysis is part of my on-going PhD project that uses diet and metabolic data with body measurements,location data, and indicators of reproduction to explore how these different elements interact to influence bear body condition and reproductive output. 
+
+## Data description
+
+The data can be structured in several ways. Bears are captured multiple times throughout their life, so there is among-individual variation as well as within-individual variation. For example, the mass of any given individual from multiple years is expected to be more similar than mass measurements among differen individuals (of the same age and sex)
+
+Similarly, annual, landscape-scale variation may result in both among-year and within-year variation. For example, a particulalry harsh winter may result in lower mass in all bears that year, making the within-year variation smaller than the among year variation.
+
+Additionally, this data is from a long-term monotoring effort of indiviually known bears in which bears are typically captured and marked for the first time as yearlings. Thus, we also have extensive data on the pedigree and relationships among bears. Many apsects of physiology and life history have both a genetic component and a social learning component. Thus animals that are more closely related should have lower variation in traits than indiviudlas that are less closely related. For example, there should be lower variation of mass among bears with the same mother should than among bears from different mothers (given the same sex and age). 
+
+This structure is nested, in that each year a female may have a litter of highly related and more-similar offspring made of individuals that are then sampled throughout their life time. Thus inidividual is nested within the mother or family group which is nested within the year she gave birth to that litter. 
+
+
+# supporting information
+
+Below I follow the vingette for completing multivariate mixed model analysis in the "brms" package as detailed in the wiki on the github page: https://github.com/JonBrommer/Multivariate-Mixed-Models-in-R/wiki/brms-examples
+
+# Environment
+
+## Load packages
+
+```{r}
+
+library(ggplot2)
+library(brms)
+library(MCMCglmm)
+
+```
+
+
+## load data
+
+```{r}
+
+LOP.df <- read.csv("Data/LOPdata_Centroids.csv")
+LOP.df <- subset(LOP.df, sex!="")
+LOP.df$fAGE <- as.factor(LOP.df$age)
+LOP.df <- na.omit(LOP.df)
+LOP.df <- subset(LOP.df, Year>2007)
+
+
+```
+
+
+
+# begin the multivariate analysis
+
+```{r}
+DF1 <-(LOP.df[,c(
+  as.numeric(which(colnames(LOP.df)=="N15")),
+  as.numeric(which(colnames(LOP.df)=="mass")),
+  which(colnames(LOP.df)=="BearID")
+  )
+])
+
+which(is.na(DF1))
+
+
+bform1 <- 
+  bf(mvbind(mass, N15) ~ sex + (1|p|BearID)) +
+  set_rescor(TRUE)
+
+fit1 <- brm(bform1, data = LOP.df, chains = 2, cores = 2)
+
+Nit.Mass_BID <- brm(cbind(mass,N15) ~ sex + (1|BearID),
+             data = LOP.df,
+             family = "gaussian")
+
+fit1 <- add_criterion(fit1, "loo",
+                      moment_match=TRUE)
+summary(fit1)
+
+print(fit1)
+
+plot(fit1)
+
+
+
+```
+

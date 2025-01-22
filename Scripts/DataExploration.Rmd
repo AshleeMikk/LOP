@@ -1,0 +1,335 @@
+---
+title: "DataExploration"
+author: "Ashlee Mikkelsen"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+
+# Environment
+
+## Set WD
+
+## Load Packages
+
+```{r}
+
+library(ggplot2)
+library(viridis)
+
+```
+
+
+## Set graphing theme
+
+```{r}
+
+mytheme <- theme(
+    axis.text = element_text(size = 10,face = "bold"),
+    axis.title = element_text(size = 12, face = "bold"),
+    panel.grid.major = element_line(color = "grey92"),
+    panel.grid.minor = element_line(color = "grey96"),
+    panel.background = element_rect(fill = "white"),
+    axis.line = element_line(colour = "black",linewidth = 1),
+    axis.ticks = element_line(linewidth = 1),
+    legend.position = "top"
+    )
+theme_set(mytheme)
+
+P <- palette("inferno"(40))
+P <- palette("inferno"(40))
+
+```
+
+
+## Load Data
+
+```{r}
+
+LOP.df <- read.csv("Data/LOPdata_Centroids.csv")
+LOP.df <- subset(LOP.df, sex!="")
+LOP.df$fAGE <- as.factor(LOP.df$age)
+LOP.df$fYEAR <- as.factor(LOP.df$Year)
+```
+
+
+# Data distributions
+
+
+```{r}
+
+table(LOP.df$BearID)
+Bears <- as.factor(LOP.df$BearID)
+nlevels(Bears)
+Years <- as.factor(LOP.df$Year)
+
+```
+
+We have 183 observations of 86 different bears for this analysis.
+
+## Year
+
+```{r}
+
+ggplot(data = LOP.df, aes(Year))+
+  geom_histogram(binwidth = 1,
+                 fill=P[1])+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))
+
+```
+
+annually, we don't have amazing sample sizes. We have a block of years from 2008-2013 that have 2-4 times the sample sizes of other years. If there is anything unique about this time in the project, it is likely to scew our results (maybe this was a time of harsh winters, changes in hunting pressures, etc.) We also have almost no samples 2005-2007. Consider dropping these years. If we have any temporal component in mind, these years will definietly have to be removed.
+
+## cortisol
+
+```{r}
+
+ggplot(data = LOP.df, aes(cortisol))+
+  geom_histogram(binwidth = sd(LOP.df$cortisol),
+                 fill=P[6])+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))
+
+ggplot(data = LOP.df, aes(log(cortisol)))+
+  geom_histogram(binwidth=sd(log(LOP.df$cortisol)),
+                 fill=P[7])+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))
+
+
+```
+As I have seen many times before, the cortisol data is highly skewed around zero with a long, right-hand tail. But log-transforming it makes it much more normal.
+
+## Mass
+
+```{r}
+
+ggplot(data = LOP.df, aes(mass))+
+  geom_histogram(aes(fill=fAGE,
+                     group=fAGE))+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))+
+  scale_fill_viridis(discrete = TRUE,
+                     option = "B",
+                     end=0.95)+
+  labs(fill="Bear Age")
+
+############### Females
+
+ggplot(data = subset(LOP.df, sex=="F"), aes(mass))+
+  geom_histogram(aes(fill=fAGE,
+                     group=fAGE),
+                 bins=7)+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))+
+  scale_fill_viridis(discrete = TRUE,
+                     option = "B",
+                     end=0.95)+
+  labs(fill="Bear Age")+
+  xlab("Famle brown bear mass by age")
+
+
+############### Males
+
+ggplot(data = subset(LOP.df, sex=="M"), aes(mass))+
+  geom_histogram(aes(fill=fAGE,
+                     group=fAGE),
+                 bins=7)+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))+
+  scale_fill_viridis(discrete = TRUE,
+                     option = "B",
+                     end=0.95)+
+  labs(fill="Bear Age")+
+  xlab("Male brown bear mass by age")
+
+
+```
+
+The sample size of females is quite a bit larger than the sample size of males, but overall the mass and age distributions look pretty good.
+
+## Age
+
+```{r}
+
+ggplot(data = LOP.df, aes(age))+
+  geom_histogram(binwidth = 1,
+                 fill=P[16])+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))+
+  facet_wrap(~sex)
+
+```
+
+There is definitely a skew towards younger bears, which is not surprising since our population is heavily harvested.
+
+
+## d13C
+
+```{r}
+
+ggplot(data = LOP.df, aes(C13))+
+  geom_histogram(fill=P[21],
+                 binwidth = sd(LOP.df$C13))+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))+
+  scale_fill_viridis(discrete = TRUE,
+                     option = "B",
+                     end=0.95)+
+  labs(fill="Bear Age")
+
+
+ggplot(data = LOP.df, aes(Year,C13))+
+  geom_jitter(width=0.2,
+              alpha=0.5)+
+  geom_boxplot(aes(group = fYEAR),
+               alpha=0.2,
+               outliers = FALSE)+
+  scale_x_continuous(expand = c(0,0),
+                     limits=c(2007.5,2020.5))
+
+```
+
+
+
+## d15N
+
+```{r}
+
+ggplot(data = LOP.df, aes(N15))+
+  geom_histogram(fill=P[26],
+                 binwidth = sd(LOP.df$N15))+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_continuous(expand = c(0,0))
+
+
+ggplot(data = LOP.df, aes(Year,N15))+
+  geom_jitter(width=0.2,
+              alpha=0.5)+
+  geom_boxplot(aes(group = fYEAR),
+               alpha=0.2,
+               outliers = FALSE)+
+  scale_x_continuous(expand = c(0,0),
+                     limits=c(2007.5,2020.5))
+
+
+```
+
+
+
+
+# Maps
+
+02.12.2024: I had previously included age in these figures, and used that variable to determine the size of the points (bigger size= older bears) but based off the analysis I did with Marcello, cortisol didn't really vary with age. So there isn't a reason to inlude that variable and complicate the map. So I removed age as a factor and only look at spatial distribution of cortisol by sex. Although, there was a difference in that analysis among demographic classes. So maybe adding in reproductive status/category would be a better option.
+
+```{r}
+
+Map.Cort.Sex <- ggplot(data = LOP.df, aes(x,y))+
+  geom_point(alpha=0.5,
+             aes(color=log(cortisol),
+                 pch=Repro),
+             size=2)+
+  coord_equal()+
+  scale_color_viridis(option = "B", end=0.95)+
+  theme(legend.position = "right")+
+  ylab("UTM  Y ")+
+  xlab("UTM  X")+
+  facet_wrap(~sex)
+
+Map.Cort.Sex
+
+ggsave(plot = Map.Cort.Sex,
+       "MapPlot_lnCortAge.png",
+       width = 6.5, height=6.4,
+       units = "in",
+       dpi=800)
+
+
+ggplot(data = LOP.df, aes(x,y))+
+  geom_point(alpha=0.5,
+             aes(size=mass,
+                 color=log(cortisol),
+                 pch=sex))+
+  coord_equal()+
+  scale_color_viridis(option = "B", end=0.95)+
+  facet_wrap(~BearID)
+
+
+ggplot(data = LOP.df, aes(x,y))+
+  geom_point(alpha=0.5,
+             aes(size=mass,
+                 color=N15,
+                 pch=Repro))+
+  coord_equal()+
+  scale_color_viridis(option = "A", end=0.95)+
+  facet_wrap(~sex)
+
+
+ggplot(data = LOP.df, aes(x,y))+
+  geom_point(alpha=0.5,
+             aes(size=age,
+                 color=N15,
+                 pch=Repro))+
+  coord_equal()+
+  scale_color_viridis(option = "A", end=0.95)+
+  facet_wrap(~sex)
+
+## Similar to the message above, my manuscript on long-term patterns in brown bear diet indicated there was no effect of age on d13C values, so maybe age is not an important factor to retain in these maps.It might be more informative to include size.
+
+Map.dc13.Mass <- 
+  ggplot(data = LOP.df, aes(x,y))+
+  geom_point(alpha=0.5,
+             aes(size=mass,
+                 color=C13,
+                 pch=Repro))+
+  coord_equal()+
+  scale_color_viridis(option = "C", end=0.95)+
+  theme(legend.position = "right")+
+  facet_wrap(~sex)
+
+Map.dc13.Mass
+
+ggsave(plot = Map.dc13.Mass,
+       "MapPlot_13CMass.png",
+       width = 6.5, height=6.4,
+       units = "in",
+       dpi=800)
+
+
+
+ggplot(data = LOP.df, aes(x,y))+
+  geom_point(alpha=0.5,
+             aes(size=C13,
+                 color=N15,
+                 pch=sex))+
+  coord_equal()+
+  scale_color_viridis(option = "B", end=0.95)+
+  facet_wrap(~Repro)
+
+
+
+```
+
+
+# bi-variate plots
+
+## Year
+
+```{r}
+
+ggplot(data = LOP.df, aes(Year,cortisol))+
+  geom_jitter(width=0.12,
+              alpha=0.5)+
+  geom_boxplot(aes(group=Year, fill=Year),
+               alpha=0.2)+
+  scale_fill_viridis(option = "inferno")
+
+```
+
