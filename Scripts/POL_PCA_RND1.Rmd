@@ -97,6 +97,8 @@ Years.PCA <- as.factor(LOP.PCA.df$Year)
 
 ```
 
+
+
 Before I center the variables, I want to check their correlations
 
 ```{r}
@@ -104,25 +106,40 @@ Before I center the variables, I want to check their correlations
 corr_mat <- 
   cor(LOP.PCA.df, method = "pearson")
 
-corrplot(corr_mat, type="upper", order="hclust", method = "number")
+PcoorPlot <- corrplot(corr_mat, type="upper", order="hclust", method = "number")
+
+ggsave(plot = PcoorPlot,
+       "FiguresTables/POL_PcorrPlot.png",
+       width = 6, height = 5.5,
+       units = "in",
+       dpi=700)
 
 ```
 
-Interestingly, dN15 and both mass and head circumference are highly positively correlated, but it is only minimally correlated with age. This is strange because both Anne and I have found 15N to be highly correlated with d15N. And age is not actually that highly correlated with mass and head circumference. 
+Interestingly, dN15 and both mass and head circumference are highly positively correlated, but it is only minimally correlated with age. This is strange because both Anne and I have found age to be highly correlated with d15N. And age is not actually that highly correlated with mass and head circumference. 
 
-## Center my variables
+## Standardize my variables
 
 ```{r}
 
-LOP.PCA.df$cYear <- LOP.PCA.df$Year-mean(LOP.PCA.df$Year)
-LOP.PCA.df$cAge <- LOP.PCA.df$age-mean(LOP.PCA.df$age)
-LOP.PCA.df$cC13 <- LOP.PCA.df$C13-mean(LOP.PCA.df$C13)
-LOP.PCA.df$cN15 <- LOP.PCA.df$N15-mean(LOP.PCA.df$N15)
-LOP.PCA.df$cMass <- LOP.PCA.df$mass-mean(LOP.PCA.df$mass)
-LOP.PCA.df$cHeadCirc <- LOP.PCA.df$headcirc-mean(LOP.PCA.df$headcirc)
-LOP.PCA.df$cCortisol <- LOP.PCA.df$cortisol-mean(LOP.PCA.df$cortisol)
-LOP.PCA.df$cUTMX <- LOP.PCA.df$x-mean(LOP.PCA.df$x)
-LOP.PCA.df$cUTMY <- LOP.PCA.df$y-mean(LOP.PCA.df$y)
+LOP.PCA.df$zYear <-
+  LOP.PCA.df$Year-mean(LOP.PCA.df$Year)/sd(LOP.PCA.df$Year)
+LOP.PCA.df$zAge <- 
+  LOP.PCA.df$age-mean(LOP.PCA.df$age)/sd(LOP.PCA.df$age)
+LOP.PCA.df$zC13 <- 
+  LOP.PCA.df$C13-mean(LOP.PCA.df$C13)/sd(LOP.PCA.df$C13)
+LOP.PCA.df$zN15 <- 
+  LOP.PCA.df$N15-mean(LOP.PCA.df$N15)/sd(LOP.PCA.df$N15)
+LOP.PCA.df$zMass <- 
+  LOP.PCA.df$mass-mean(LOP.PCA.df$mass)/sd(LOP.PCA.df$mass)
+LOP.PCA.df$zHeadCirc <- 
+  LOP.PCA.df$headcirc-mean(LOP.PCA.df$headcirc)/sd(LOP.PCA.df$headcirc)
+LOP.PCA.df$zCortisol <- 
+  LOP.PCA.df$cortisol-mean(LOP.PCA.df$cortisol)/sd(LOP.PCA.df$cortisol)
+LOP.PCA.df$zUTMX <- 
+  LOP.PCA.df$x-mean(LOP.PCA.df$x)/sd(LOP.PCA.df$x)
+LOP.PCA.df$zUTMY <-
+  LOP.PCA.df$y-mean(LOP.PCA.df$y)/sd(LOP.PCA.df$y)
 
 ```
 
@@ -130,16 +147,16 @@ LOP.PCA.df$cUTMY <- LOP.PCA.df$y-mean(LOP.PCA.df$y)
 
 ```{r}
 
-LOP.PCA.Centered.df <- LOP.PCA.df[,c(
-  which(colnames(LOP.PCA.df)=="cYear"),
-  which(colnames(LOP.PCA.df)=="cAge"),
-  which(colnames(LOP.PCA.df)=="cC13"),
-  which(colnames(LOP.PCA.df)=="cN15"),
-  which(colnames(LOP.PCA.df)=="cMass"),
-  which(colnames(LOP.PCA.df)=="cHeadCirc"),
-  which(colnames(LOP.PCA.df)=="cCortisol"),
-  which(colnames(LOP.PCA.df)=="cUTMX"),
-  which(colnames(LOP.PCA.df)=="cUTMY")
+LOP.PCA.Standard.df <- LOP.PCA.df[,c(
+  which(colnames(LOP.PCA.df)=="zYear"),
+  which(colnames(LOP.PCA.df)=="zAge"),
+  which(colnames(LOP.PCA.df)=="zC13"),
+  which(colnames(LOP.PCA.df)=="zN15"),
+  which(colnames(LOP.PCA.df)=="zMass"),
+  which(colnames(LOP.PCA.df)=="zHeadCirc"),
+  which(colnames(LOP.PCA.df)=="zCortisol"),
+  which(colnames(LOP.PCA.df)=="zUTMX"),
+  which(colnames(LOP.PCA.df)=="zUTMY")
   )
 ]
 
@@ -152,18 +169,58 @@ LOP.PCA.Centered.df <- LOP.PCA.df[,c(
 
 ## Run PCA
 ```{r}
-
 LOP_pca_values <- 
-  prcomp(LOP.PCA.Centered.df,
+  prcomp(LOP.PCA.Standard.df,
          center = TRUE,
          scale = TRUE)
 
 # Let's look at the PCA values
 summary(LOP_pca_values)
 
-LOP_pca_values$rotation
+LOP_Eigenvectors <- LOP_pca_values$rotation
+print(LOP_Eigenvectors)
+VarOfScores <- LOP_pca_values$sdev^2
+print(VarOfScores)
+scores <- LOP_pca_values$x
 
 ```
+
+
+```{r}
+varPercent <- VarOfScores/sum(VarOfScores)*100
+
+barplot(varPercent, xlab='PC', ylab='Percent Variance',
+        names.arg=1:length(varPercent), las=1, ylim=c(0, max(varPercent)),
+        col='gray')
+abline(h=100/ncol(LOP.PCA.Standard.df), col='red')
+
+sum(varPercent[1:4])
+
+```
+
+
+```{r}
+
+varPercent <- round(varPercent[1:4],1)
+sum(varPercent[1:4])
+PCs <- list("PC1","PC2","PC3","PC4")
+PCvar <- rbind(PCs,varPercent)
+
+```
+
+
+```{r}
+
+LOP_Eigenvectors
+sqrt(1/ncol(LOP.PCA.Standard.df)) # cutoff for 'important' loadings 
+
+test <- data.frame(LOP_Eigenvectors)
+test2 <- test[c(4,5,6),1]
+
+
+```
+
+
 
 ## Visualize PCA
 
@@ -205,7 +262,7 @@ When I graph PC3 ~ PC2, the grouping between the sexes is not longer evident, bu
 
 ```{r}
 
-PCA_loadings <- data.frame(pca_values$x)
+PCA_loadings <- data.frame(LOP_pca_values$x)
 print(PCA_loadings)
 
 PCA_loadings <- PCA_loadings[,1:4]
@@ -217,7 +274,7 @@ Vnames <- c("Year","Age","d13C","d15N","Mass",
             "HeadCirc","CORT", "UTMX", "UTMY")
 
 pca_load <- 
-  as.data.frame(cbind(Vnames,pca_values$rotation))
+  as.data.frame(cbind(Vnames,LOP_pca_values$rotation))
 
 pca_load$PC1 <- as.numeric(pca_load$PC1)
 pca_load$PC2 <- as.numeric(pca_load$PC2)
@@ -378,6 +435,122 @@ ggsave(plot = LOP_PC23,
        width = 5, height = 6.5,
        units = "in",
        dpi=800)
+
+```
+
+
+
+```{r}
+
+ggplot(data = PCA_Regress_df, aes(x,y))+
+  geom_point(aes(color=PC1))
+
+
+ggplot(data = PCA_Regress_df, aes(x,y))+
+  geom_point(aes(color=PC2))
+
+ggplot(data = PCA_Regress_df, aes(x,y))+
+  geom_point(aes(color=PC3))
+
+PCA_Regress_df$zCortisol <- LOP.PCA.Standard.df$zCortisol
+ggplot(data = PCA_Regress_df, aes(x,y))+
+  geom_point(aes(color=zCortisol))
+
+```
+
+
+# Initial conclusions and interpretations
+
+## PC1
+
+PC1 is associated with bear mass, head circumference, and $\delta^{15}N$. This could be interpreted as a composite of bear size, which explains the greatest proportion of variance in the data. Interestingly, age was only a moderate contributor to the PC (0.27 as opposed to the 0.33 cutoff). 
+
+## Exploring size and age VS size and d15N
+
+Is nitorgen a better predictor or more closely correlated with size than age?
+
+```{r}
+
+ggplot(data = PCA_Regress_df, aes(age, mass))+
+  geom_jitter(width=0.2,
+              alpha=0.5,
+              aes(color=sex,
+                  pch=sex))
+PCA_Regress_df$age_ln <- log(PCA_Regress_df$age)
+
+Mass.age <- lm(mass~age_ln+
+                 sex+
+                 sex*age_ln,
+               data = PCA_Regress_df)
+summary(Mass.age)
+AICcmodavg::AICc(Mass.age)
+
+```
+
+
+```{r}
+
+ggplot(data = PCA_Regress_df, aes(age, headcirc))+
+  geom_jitter(width=0.2,
+              alpha=0.5,
+              aes(color=sex,
+                  pch=sex))
+
+HeadCirc.age <- lm(headcirc~age_ln+
+                 sex+
+                 sex*age_ln,
+               data = PCA_Regress_df)
+summary(HeadCirc.age)
+AICcmodavg::AICc(HeadCirc.age)
+
+```
+
+If we want to consider age, should we drop any bears over 15 because of diminishing sample sizes?
+
+```{r}
+
+ggplot(data = PCA_Regress_df, aes(N15, mass))+
+  geom_point(alpha=0.5,
+              aes(color=sex,
+                  pch=sex))
+
+Mass.N15 <- lm(mass~N15+
+                 sex+
+                 sex*N15,
+               data = PCA_Regress_df)
+summary(Mass.N15)
+AICcmodavg::AICc(Mass.N15)
+
+
+```
+
+
+```{r}
+
+ggplot(data = PCA_Regress_df, aes(N15, headcirc))+
+  geom_point(alpha=0.5,
+              aes(color=sex,
+                  pch=sex))
+
+HeadCirc.N15 <- lm(headcirc~N15+
+                 sex+
+                 sex*N15,
+               data = PCA_Regress_df)
+summary(HeadCirc.N15)
+AICcmodavg::AICc(HeadCirc.N15)
+
+```
+
+No. $\delta^{15}N$ is not a better predictor of mass or head circumference than age. Then why are they so closely correlated and why is Nitrogen loaded so much heavier on PC1 than age? Unless PC1 is a composite of something else. How else might mass, skull circumference, and nitrogen be related that PC1 is accounting for?
+
+
+
+```{r}
+
+
+ggplot(data = PCA_Regress_df, aes(x,y))+
+  geom_point(aes(color=age,
+                 pch=Repro))
 
 ```
 
